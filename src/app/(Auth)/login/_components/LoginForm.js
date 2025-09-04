@@ -12,22 +12,26 @@ import { toast } from 'sonner';
 import { setUser } from '@/redux/features/authSlice';
 import { useSignInMutation } from '@/redux/api/authApi';
 import CustomLoader from '@/components/shared/CustomLoader/CustomLoader';
-
+import { jwtDecode } from 'jwt-decode';
 
 export default function LoginForm() {
   const router = useRouter();
   const dispatch = useDispatch();
   // Login api handlers
-  const [signin, { isLoading, error }] = useSignInMutation();
+  const [signin, { isLoading }] = useSignInMutation();
 
   const onLoginSubmit = async (data) => {
     try {
       const res = await signin(data).unwrap();
       // console.log("API Response:", res.data?.accessToken);
       if (res.success) {
+        const decodedToken = jwtDecode(res.data.accessToken);
+        const userRole = decodedToken?.role;
+        if (userRole !== 'admin') {
+          toast.error('You are not authorized to access this site');
+          return;
+        }
         toast.success('Login successful');
-        // localStorage.setItem("refreshToken", res?.data?.refreshToken);
-        // Set user info into store
         dispatch(
           setUser({
             token: res.data?.accessToken,
